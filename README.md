@@ -17,10 +17,17 @@ pip install -r requirements.txt
 ---
 
 ### 2. Datasets
-Download and prepare datasets:
+#### 1. Download and prepare datasets:
 
 OK-VQA: https://okvqa.allenai.org/
 
 InfoSeek: https://github.com/MMRAG/infoseek
 
 E-VQA: https://evqa.org/
+
+#### 2. run the run.py file to obtain the google search screenshot corresponding to the image.
+#### 3. Use the extract.py file to extract visual features and text hidden states.
+
+## 🚀 Train
+
+### 1. The classifier predicts whether retrieval should be applied for a given query.
