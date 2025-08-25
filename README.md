@@ -13,7 +13,9 @@ We recommend using **Python 3.10+** with Conda or virtualenv:
 conda create -n mmarag python=3.10
 conda activate mmarag
 pip install -r requirements.txt
+
 ---
+
 ### 2. Datasets
 Download and prepare datasets:
 
