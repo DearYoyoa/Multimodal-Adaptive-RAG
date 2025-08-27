@@ -34,6 +34,6 @@ E-VQA: https://evqa.org/
 ### 1. The classifier predicts whether retrieval should be applied for a given query.
 python classifier_token_probe_okvqa.py
 
-## 🚀 Test
+## 🚀 Evaluate
 
-### 
+### Test using run_okvqa_i2_cls2_test.py
