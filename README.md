@@ -17,7 +17,9 @@ pip install -r requirements.txt
 1. Download and prepare datasets:
 
 OK-VQA: https://okvqa.allenai.org/
+
 InfoSeek: https://github.com/MMRAG/infoseek
+
 E-VQA: https://evqa.org/
 
 2. run the run.py file to obtain the google search screenshot corresponding to the image.
