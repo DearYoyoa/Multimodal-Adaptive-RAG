@@ -26,8 +26,14 @@ InfoSeek: https://github.com/MMRAG/infoseek
 E-VQA: https://evqa.org/
 
 #### 2. run the run.py file to obtain the google search screenshot corresponding to the image.
-#### 3. Use the extract.py file to extract visual features and text hidden states.
-
+#### 3. Use the extract.py file to extract visual features and text hidden states to generate responses simultaneously and determine whether the answers are true or false. 
+#### 4. Run counter.py to set labels for the samples, including four scenarios.
+(true, true), (true, false), (false, true), (false, false)
 ## 🚀 Train
 
 ### 1. The classifier predicts whether retrieval should be applied for a given query.
+python classifier_token_probe_okvqa.py
+
+## 🚀 Test
+
+### 
