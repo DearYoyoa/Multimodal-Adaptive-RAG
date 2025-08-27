@@ -14,10 +14,8 @@ pip install -r requirements.txt
 ```
 
 ## 📊 Datasets
-Each dataset contains images and annotations, download and prepare datasets:
-```
-git
-```
+Each dataset contains images and annotations, download and prepare three [datasets](https://drive.google.com/file/d/1nY8O6yKrOwVwHgy3cooBiZ5-oWdGMe4-/view?usp=drive_link). 
+
 Obtain the google search screenshot corresponding to the image:
 ```
 python rir_api.py 
