@@ -1,6 +1,6 @@
 # Multimodal-Adaptive-RAG
 
-This repository provides the implementation of **Multimodal Adaptive Retrieval-Augmented Generation through Internal Representation Learning**. The project investigates how **internal hidden representations** can be leveraged to decide whether retrieval is necessary in multimodal question answering (VQA) tasks.
+This repository provides the implementation of **Multimodal Adaptive Retrieval-Augmented Generation through Internal Representation Learning**. The project investigates how internal hidden representations can be leveraged to decide whether retrieval is necessary in multimodal question answering (VQA) tasks.
 
 ## ⚙️ Setup
 
@@ -14,13 +14,10 @@ pip install -r requirements.txt
 ```
 
 ## 📊 Datasets
-1. Download and prepare datasets:
-
-OK-VQA: https://okvqa.allenai.org/
-
-InfoSeek: https://github.com/MMRAG/infoseek
-
-E-VQA: https://evqa.org/
+Each dataset contains images and annotations, download and prepare datasets:
+```
+git
+```
 
 2. run the run.py file to obtain the google search screenshot corresponding to the image.
 3. Use the extract.py file to extract visual features and text hidden states to generate responses simultaneously and determine whether the answers are true or false. 
