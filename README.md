@@ -9,11 +9,11 @@ This repository provides the implementation of **Multimodal Adaptive Retrieval-A
 ### 1. Environment
 We recommend using **Python 3.10+** with Conda or virtualenv:
 
-```bash
+```
 conda create -n mmarag python=3.10
 conda activate mmarag
 pip install -r requirements.txt
-bash
+```
 ---
 
 ### 2. Datasets
