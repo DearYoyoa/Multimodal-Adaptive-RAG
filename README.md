@@ -21,7 +21,9 @@ Obtain the google search screenshot corresponding to the image:
 python rir_api.py 
 ```
 Use the extract.py file to extract visual features and text hidden states to generate responses simultaneously and determine whether the answers are true or false. 
+
 Run counter.py to set labels for the samples, including four scenarios.
+
 (true, true), (true, false), (false, true), (false, false)
 
 ## 🚀 Train
