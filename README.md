@@ -22,7 +22,7 @@ python rir_api.py
 ```
 Extract visual features and text hidden states using screenshot and without screenshot to generate responses simultaneously and determine whether the answer is true or false.
 ```
-run_okvqa_i2_text_cls2_extract.py
+python run_okvqa_i2_text_cls2_extract.py
 ```
 Run counter.py to set labels for the samples, including four scenarios.
 ```
