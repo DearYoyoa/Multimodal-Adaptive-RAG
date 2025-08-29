@@ -30,8 +30,13 @@ Run counter.py to set labels for the samples, including four scenarios.
 ```
 
 ## 🚀 Train
-### 1. The classifier predicts whether retrieval should be applied for a given query.
+Train the classifier to predict whether retrieval should be applied to a given query and image. 
+```
 python classifier_token_probe_okvqa.py
+```
 
 ## 🚀 Evaluate
-Test using run_okvqa_i2_cls2_test.py
+Test using the trained classifier.
+```
+python run_okvqa_i2_cls2_test.py
+```
