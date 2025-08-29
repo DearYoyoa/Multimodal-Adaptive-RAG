@@ -20,11 +20,14 @@ Obtain the google search screenshot corresponding to the image:
 ```
 python rir_api.py 
 ```
-Use the extract.py file to extract visual features and text hidden states to generate responses simultaneously and determine whether the answers are true or false. 
-
+Extract visual features and text hidden states using screenshot and without screenshot to generate responses simultaneously and determine whether the answer is true or false.
+```
+run_okvqa_i2_text_cls2_extract.py
+```
 Run counter.py to set labels for the samples, including four scenarios.
-
+```
 (true, true), (true, false), (false, true), (false, false)
+```
 
 ## 🚀 Train
 ### 1. The classifier predicts whether retrieval should be applied for a given query.
