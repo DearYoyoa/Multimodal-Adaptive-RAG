@@ -38,5 +38,5 @@ python classifier_token_probe_okvqa.py
 ## 🚀 Evaluate
 Test using the trained classifier.
 ```
-python run_okvqa_i2_cls2_test.py
+bash cl2_token_okvqa.sh
 ```
