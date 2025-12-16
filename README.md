@@ -36,7 +36,7 @@ python classifier_token_probe_okvqa.py
 ```
 Two four-classifiers can be trained. The RIR-Optimistic Strategy calls RIR for all cases except (false, true), while the RIR-Pessimistic Strategy does not call RIR for all cases except (true, false). Or, the binary classifier can be directly trained.
 ## 🚀 Evaluate
-Test using the trained classifier.
+Test using the trained classifier. Finally, make the judgment using exact matching or by using the Qwen2.5VL-72b model.
 ```
 bash cl2_token_okvqa.sh
 ```
