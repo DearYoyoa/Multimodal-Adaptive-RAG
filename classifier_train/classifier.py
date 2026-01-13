@@ -28,13 +28,11 @@ class InfoseekDataset(Dataset):
         item = self.data[idx]
         image_id = item['image_id']
         
-        # 加载图片
         image_path = os.path.join(self.image_dir, f"{image_id}.JPEG")
         image = Image.open(image_path).convert('RGB')
         if self.transform:
             image = self.transform(image)
         
-        # 加载截图（如果需要）
         screenshot = None
         if self.screenshot_dir:
             screenshot_path = os.path.join(self.screenshot_dir, f"{image_id}-search_result.png")
@@ -42,19 +40,16 @@ class InfoseekDataset(Dataset):
             if self.transform:
                 screenshot = self.transform(screenshot)
         
-        # 加载隐藏状态
         hidden_state = None
         if self.hidden_state_dir:
             hidden_state_path = os.path.join(self.hidden_state_dir, f"hidden_states_{image_id}.npy")
             hidden_state = np.load(hidden_state_path)
         
-        # 加载RIR隐藏状态
         hidden_state_rir = None
         if self.hidden_state_rir_dir:
             hidden_state_rir_path = os.path.join(self.hidden_state_rir_dir, f"hidden_states_rir_{image_id}.npy")
             hidden_state_rir = np.load(hidden_state_rir_path)
         
-        # 获取标签
         label = 1 if item['group'].endswith('_0') else 0
         group_label = int(item['group'].split('_')[0]) * 2 + (1 if item['group'].endswith('_1') else 0)
         
@@ -64,9 +59,9 @@ class Classifier1(nn.Module):
     def __init__(self):
         super(Classifier1, self).__init__()
         self.resnet = models.resnet18(pretrained=True)
-        self.resnet.fc = nn.Identity()  # 移除最后的全连接层
+        self.resnet.fc = nn.Identity()
         self.fc = nn.Sequential(
-            nn.Linear(4608, 512),  # 修改输入维度
+            nn.Linear(4608, 512), 
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(512, 128),
@@ -85,9 +80,9 @@ class Classifier2(nn.Module):
     def __init__(self):
         super(Classifier2, self).__init__()
         self.resnet = models.resnet18(pretrained=True)
-        self.resnet.fc = nn.Identity()  # 移除最后的全连接层
+        self.resnet.fc = nn.Identity()  
         self.fc = nn.Sequential(
-            nn.Linear(4608 * 2, 1024),  # 修改输入维度
+            nn.Linear(4608 * 2, 1024),  
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(1024, 256),
@@ -132,7 +127,6 @@ def train(model, dataloader, criterion, optimizer, device, epoch):
         total += target.size(0)
         correct += predicted.eq(target).sum().item()
         
-        # 更新进度条
         pbar.set_postfix({'loss': f'{loss.item():.4f}', 'acc': f'{100.*correct/total:.2f}%'})
     
     epoch_loss = running_loss / len(dataloader)
@@ -156,26 +150,22 @@ def save_model(model, model_name, epoch):
     logging.info(f"Saved model to {save_path}")
 
 def main():
-    # 设置日志
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # 设置参数
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     batch_size = 16
     num_epochs = 30
     learning_rate = 0.0001
     weight_decay = 0.01
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 数据预处理
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
-        transforms.RandomHorizontalFlip(),  # 添加数据增强
-        transforms.RandomRotation(10),  # 添加数据增强
+        transforms.RandomHorizontalFlip(),  
+        transforms.RandomRotation(10),  
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    # 创建数据集和数据加载器
     dataset = InfoseekDataset(
         json_file='data_0921/infoseek/infoseek_i2_rir/logs_infoseek_i2_rir.json',
         image_dir='data_0921/image',
@@ -186,7 +176,6 @@ def main():
     )
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    # 创建模型、损失函数和优化器
     classifier1 = Classifier1().to(device)
     classifier2 = Classifier2().to(device)
     criterion1 = nn.CrossEntropyLoss()
@@ -194,7 +183,6 @@ def main():
     optimizer1 = optim.AdamW(classifier1.parameters(), lr=learning_rate, weight_decay=weight_decay)
     optimizer2 = optim.AdamW(classifier2.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
-    # 训练第一个分类器
     # logging.info("Training Classifier 1...")
     # for epoch in range(num_epochs):
     #     start_time = time.time()
@@ -203,7 +191,6 @@ def main():
     #     logging.info(f"Epoch {epoch+1}/{num_epochs} completed in {end_time-start_time:.2f} seconds")
     #     save_model(classifier1, 'classifier1', epoch+1)
 
-    # 训练第二个分类器
     logging.info("\nTraining Classifier 2...")
     for epoch in range(num_epochs):
         start_time = time.time()
