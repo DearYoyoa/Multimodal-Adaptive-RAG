@@ -39,10 +39,8 @@ def print_group_ids(groups, group_keys):
         for id in groups[key]:
             print(id)
 
-file1 = '/ossfs/workspace/aml2/aml_ri/fengyi/adaptive-MMRAG/evqa_train_data/evqa_i3_prompt/evqa_train_i3_rir/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_evqa_train_i3_rir.json'
-file2 = '/ossfs/workspace/aml2/aml_ri/fengyi/adaptive-MMRAG/evqa_train_data/evqa_i3_prompt/evqa_train_i3/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_evqa_train_i3.json'
-# file1 = 'data_0921/infoseek_i3/infoseek_train_i3_rir/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_infoseek_train_i3_rir.json'
-# file2 = 'data_0921/infoseek_i3/infoseek_train_i3/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_infoseek_train_i3.json'
+file1 = '/workspace/adaptive-MMRAG/evqa_train_data/evqa_i3_prompt/evqa_train_i3_rir/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_evqa_train_i3_rir.json'
+file2 = '/workspace/adaptive-MMRAG/evqa_train_data/evqa_i3_prompt/evqa_train_i3/Qwen25_72B_Instruct_awq_vllm_l20_judged_logs_evqa_train_i3.json'
 
 labeled_data1, labeled_data2, groups = compare_and_label_files(file1, file2)
 
