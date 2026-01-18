@@ -6,14 +6,11 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 from tqdm import tqdm
 
-CLIP_MODEL_PATH = "model/clip"  # 本地 CLIP 模型路径
+CLIP_MODEL_PATH = "model/clip"  
 # PRE_path = ["data/data_okvqa", "data/data_1017", "data/local_data"]
 PRE_path = ["data/data_okvqa"]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# =========================
-# 2. 加载 CLIP
-# =========================
 model = CLIPModel.from_pretrained(CLIP_MODEL_PATH).to(DEVICE)
 processor = CLIPProcessor.from_pretrained(CLIP_MODEL_PATH)
 model.eval()
@@ -34,9 +31,7 @@ def compute_image_similarity(img1_path, img2_path):
         similarity = torch.matmul(feats[0], feats[1]).item()
 
     return similarity
-# =========================
-# 1. 路径配置
-# =========================
+
 def test():
     for p_path in PRE_path:
         INPUT_JSON = f"{p_path}/input.json"
@@ -45,17 +40,11 @@ def test():
         OKVQA_IMAGE_DIR = f"{p_path}/image"
         SCREENSHOT_DIR = f"{p_path}/screenshot"
 
-        # =========================
-        # 4. 读取 JSON
-        # =========================
         with open(INPUT_JSON, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert isinstance(data, list), "JSON must be a list of samples"
 
-        # =========================
-        # 5. 主处理循环
-        # =========================
         new_data = []
 
         for sample in tqdm(data):
@@ -71,18 +60,13 @@ def test():
             else:
                 similarity = compute_image_similarity(img1_path, img2_path)
 
-            # 保持原字段不变，仅新增 similarity
             new_sample = dict(sample)
             new_sample["similarity"] = similarity
 
             new_data.append(new_sample)
 
-        # =========================
-        # 6. 保存新 JSON
-        # =========================
         with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
             json.dump(new_data, f, ensure_ascii=False, indent=2)
 
         print(f"Saved to {OUTPUT_JSON}")
-
 test()
