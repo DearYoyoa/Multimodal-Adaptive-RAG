@@ -37,51 +37,31 @@ def load_image_wrapper(image_path, data_source='url'):
         raise ValueError(f"Invalid data_source: {data_source}")
 
 def extract_vision_features(generated_output, inputs, model):
-    """
-    从生成输出中提取视觉特征。
-    
-    Args:
-        generated_output: 模型的生成输出 (GenerateDecoderOnlyOutput)
-        inputs: 模型的输入
-        model: IDEFICS2 模型
-    
-    Returns:
-        numpy.ndarray: 图像特征向量
-    """
-    # 获取最后一层的 hidden states
+
     last_layer_hidden_states = generated_output.hidden_states[0][-1]
-    # TODO modify the selection of layers
-    # 找到图像token的位置
     image_token_id = model.config.image_token_id
-    input_ids = inputs['input_ids'][0]  # 假设 batch_size = 1
-    
-    # 找到所有图像token的位置
+    input_ids = inputs['input_ids'][0]
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
     
     if len(image_token_positions) == 0:
         raise ValueError("No image tokens found in the input sequence")
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 2).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 获取每个图像的特征
+
     vision_hidden_states = []
     for i in range(len(image_boundaries) - 1):
         start_idx = image_token_positions[image_boundaries[i]]
         end_idx = image_token_positions[image_boundaries[i+1] - 1]
-        
-        # 获取这张图片所有patch的hidden states（包括增强的部分）
+
         image_patches = last_layer_hidden_states[:, start_idx:end_idx+1, :]
-        # 对所有patch取平均得到这张图片的表征
         image_feature = image_patches.mean(dim=1)  # [batch_size, hidden_dim]
         vision_hidden_states.append(image_feature)
-    
-    # 不需要取平均
+
     vision_features = torch.stack(vision_hidden_states)  # [batch_size, hidden_dim]
-    
-    # 可以添加调试信息
-    if False:  # 设置为 True 来启用调试
+
+    if False: 
         print(f"Found {len(vision_hidden_states)} images")
         for i in range(len(image_boundaries) - 1):
             start = image_token_positions[image_boundaries[i]]
@@ -180,11 +160,10 @@ def query_with_image(
     generated_texts = processor.batch_decode(generated_ids, skip_special_tokens=True)
 
     # generated_output = model.generate(**inputs, max_new_tokens=1000, output_hidden_states=True, return_dict_in_generate=True)
-    # 提取并保存视觉特征
+
     # if extract_vision_feature:
     #     vision_features = extract_vision_features(generated_output, inputs, model)
     #     np.save(f'data_image_token/hidden_state/{image_path.split("/")[-1].split(".")[0]}.npy', vision_features)
-    # 处理生成的文本
     # generated_ids = generated_output.sequences
     # generated_texts = processor.batch_decode(generated_ids, skip_special_tokens=True)
     return generated_texts, messages_record
@@ -203,8 +182,7 @@ def main(args):
     # load sample data
     with open('local_data/infoseek_data.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     samples = [_ for cat_data in data.values() for _ in cat_data]
 
     with open(f'{args.output_root}/samples.json', 'w') as f:
