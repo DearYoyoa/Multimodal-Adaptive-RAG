@@ -3,7 +3,6 @@ BASE_PATH="models/token_probe_infoseek_i3"
 DATA_DIR="adaptive"
 OUTPUT_DIR="local_data/infoseek_i3"
 
-# 运行自适应检索实验
 echo "Running Adaptive Retrieval Experiment..."
 
 # Define the layers, epochs, and model types
