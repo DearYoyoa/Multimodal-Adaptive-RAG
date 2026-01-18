@@ -107,10 +107,10 @@ def reverse_search_for_all_images_in_folder(folder_path: str, screenshot_folder:
 
 if __name__ == "__main__":
     # Path to the folder containing the images
-    folder_path = "/Users/duruoshuang/Desktop/RAG/reverse-image-rag-main/image_okvqa"
+    folder_path = "/workbase/RAG/reverse-image-rag-main/image_okvqa"
 
     # Path to the folder where the screenshots will be saved
-    screenshot_folder = "/Users/duruoshuang/Desktop/RAG/reverse-image-rag-main/screenshot"
+    screenshot_folder = "/workbase/RAG/reverse-image-rag-main/screenshot"
 
     # Perform reverse image search for all images in the folder
     reverse_search_for_all_images_in_folder(folder_path, screenshot_folder, delay=3)
