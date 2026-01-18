@@ -18,36 +18,27 @@ def load_classifier(model_path, input_dim, num_classes):
     return classifier
 
 def extract_vision_features(model_output, inputs, model, layer_idx):
-    """
-    从模型输出中提取指定层的视觉特征。
-    """
-    # 获取指定层的hidden states
+
     layer_hidden_states = model_output.hidden_states[layer_idx]
-    
-    # 找到图像token的位置
+
     image_token_id = model.config.image_token_id
     input_ids = inputs['input_ids'][0]
-    
-    # 找到所有图像token的位置
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 2).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 获取每个图像的特征
+
     vision_hidden_states = []
     for i in range(len(image_boundaries) - 1):
         start_idx = image_token_positions[image_boundaries[i]]
         end_idx = image_token_positions[image_boundaries[i+1] - 1]
-        
-        # 获取这张图片所有patch的hidden states
+
         image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-        # 对所有patch取平均得到这张图片的表征
+
         image_feature = image_patches.mean(dim=1)
         vision_hidden_states.append(image_feature)
-    
-    # 堆叠所有图像的特征
+
     vision_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
     return vision_features
 
@@ -88,7 +79,7 @@ def query_with_image(
     original_vision_features = torch.tensor(original_vision_features).to(DEVICE)
     # Use classifier for prediction
     with torch.no_grad():
-        # 只使用第一个图像的表征
+
         if 'original' in classifier_path:
             x = original_vision_features[0].unsqueeze(0).to(DEVICE)
         else:
@@ -110,7 +101,6 @@ def main(args):
     #     "experiment/infoseek/models--HuggingFaceM4--idefics2-8b",
     # ).to(DEVICE)
 
-    # 从模型路径中提取layer_idx和是否使用rir
     print("classifier_path: ", args.classifier_path)
     # layer_idx = int(args.classifier_path.split('layer_')[1].split('_')[0])
     input_dim = 4096
