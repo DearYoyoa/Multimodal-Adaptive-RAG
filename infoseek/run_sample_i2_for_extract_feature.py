@@ -37,58 +37,39 @@ def load_image_wrapper(image_path, data_source='url'):
         raise ValueError(f"Invalid data_source: {data_source}")
     
 def extract_vision_features(generated_output, inputs, model):
-    """
-    从生成输出中提取所有层的视觉特征。
-    
-    Args:
-        generated_output: 模型的生成输出
-        inputs: 模型的输入
-        model: IDEFICS2 模型
-    
-    Returns:
-        numpy.ndarray: 所有层的图像特征向量
-    """
-    # 获取所有层的hidden states
-    all_hidden_states = generated_output.hidden_states  # 33层 [0-32]
-    
-    # 找到图像token的位置
+    all_hidden_states = generated_output.hidden_states  # 33 [0-32]
+
     image_token_id = model.config.image_token_id
-    input_ids = inputs['input_ids'][0]  # 假设 batch_size = 1
-    
-    # 找到所有图像token的位置
+    input_ids = inputs['input_ids'][0]  #  batch_size = 1
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
     
     if len(image_token_positions) == 0:
         raise ValueError("No image tokens found in the input sequence")
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 20).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 对每一层都提取特征
+
     all_layers_features = []
     for layer_idx, layer_hidden_states in enumerate(all_hidden_states):
-        # 获取每个图像的特征
+
         vision_hidden_states = []
         for i in range(len(image_boundaries) - 1):
             start_idx = image_token_positions[image_boundaries[i]]
             end_idx = image_token_positions[image_boundaries[i+1] - 1]
             
-            # 获取这张图片所有patch的hidden states
+
             image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-            # 对所有patch取平均得到这张图片的表征
+
             image_feature = image_patches.mean(dim=1)  # [batch_size, hidden_dim]
             vision_hidden_states.append(image_feature)
-        
-        # 堆叠当前层的所有图像特征
+
         layer_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
         all_layers_features.append(layer_features)
-    
-    # 堆叠所有层的特征
+
     all_layers_features = torch.stack(all_layers_features)  # [num_layers, num_images, batch_size, hidden_dim]
-    
-    # 可以添加调试信息
-    if False:  # 设置为 True 来启用调试
+
+    if False:  
         print(f"Found {len(vision_hidden_states)} images")
         print(f"Features shape: {all_layers_features.shape}")
         for i in range(len(image_boundaries) - 1):
@@ -177,10 +158,10 @@ def query_with_image(
     with torch.no_grad():
         model_output = model(
             **inputs,
-            output_hidden_states=True,  # 确保返回隐藏状态
-            return_dict=True,           # 确保返回字典格式的输出
+            output_hidden_states=True, 
+            return_dict=True, 
         )
-    # 提取并保存视觉特征
+
     if extract_vision_feature:
         vision_features = extract_vision_features(model_output, inputs, model)
         vision_features = vision_features.squeeze()
@@ -192,7 +173,6 @@ def query_with_image(
             os.makedirs(f'hidden_state_i3_train/hidden_infoseek/original_hidden_state/')
         np.save(f'hidden_state_i3_train/hidden_infoseek/original_hidden_state/{image_path.split("/")[-1].split(".")[0]}.npy', original_vision_features.cpu().numpy())
 
-    # 处理生成的文本
     generated_ids = 0
     generated_texts = 'For_extract'
     return generated_texts, messages_record
@@ -211,8 +191,7 @@ def main(args):
     # load sample data
     with open('data_0921/infoseek_i3/infoseek_train_i3_rir/samples.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     # samples = [_ for cat_data in data for _ in cat_data]
     samples = data
     with open(f'{args.output_root}/samples.json', 'w') as f:
