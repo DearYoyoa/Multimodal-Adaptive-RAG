@@ -51,23 +51,20 @@ def query_with_image(
     inputs_without_screenshot = processor(text=prompt_without_screenshot, images=[Image.open(image_path)], return_tensors="pt")
     inputs_without_screenshot = {k: v.to(DEVICE) for k, v in inputs_without_screenshot.items()}
 
-    # 同时使用forward和generate获取特征和响应
     with torch.no_grad():
-        # 使用forward获取hidden states
         # model_output_without_screenshot = model(
         #     **inputs_without_screenshot,
         #     output_hidden_states=True,
         #     return_dict=True,
         # )
-        # # 使用generate获取response
+
         generated_output_without_screenshot = model.generate(
             **inputs_without_screenshot, 
             max_new_tokens=1000, 
             output_hidden_states=True,
             return_dict_in_generate=True
         )
-    
-    # 提取特征
+
     hidden_state_without_screenshot = generated_output_without_screenshot.hidden_states[-1][-1][:, 0, :].detach()
 
     # Query with screenshot
@@ -90,9 +87,7 @@ def query_with_image(
     inputs_with_screenshot = processor(text=prompt_with_screenshot, images=[Image.open(image_path), Image.open(screenshot_path)], return_tensors="pt")
     inputs_with_screenshot = {k: v.to(DEVICE) for k, v in inputs_with_screenshot.items()}
 
-    # 同时使用forward和generate获取特征和响应
     with torch.no_grad():
-        # 使用generate获取response
         generated_output_with_screenshot = model.generate(
             **inputs_with_screenshot, 
             max_new_tokens=1000, 
@@ -130,7 +125,6 @@ def main(args):
         "experiment/infoseek/models--HuggingFaceM4--idefics2-8b",
     ).to(DEVICE)
 
-    # 从模型路径中提取layer_idx和是否使用rir
     use_rir = 'rir' in args.classifier_path and 'wo_rir' not in args.classifier_path
     input_dim = 8192 if use_rir else 4096
     classifier = load_classifier(args.classifier_path, input_dim, 4)
@@ -179,14 +173,12 @@ def main(args):
             answer_in_pred_without_screenshot = sample['answer'].lower() in pred_without_screenshot.lower()
             answer_in_pred_with_screenshot = sample['answer'].lower() in pred_with_screenshot.lower()
 
-        # 第一个日志：如果分类器输出为1，保留不使用screenshot的结果，否则保留使用screenshot的结果
         use_screenshot_1 = prediction != 1
         pred_1 = pred_with_screenshot if use_screenshot_1 else pred_without_screenshot
         answer_in_pred_1 = answer_in_pred_with_screenshot if use_screenshot_1 else answer_in_pred_without_screenshot
         messages_1 = messages_with_screenshot if use_screenshot_1 else messages_without_screenshot
         response_1 = response_with_screenshot if use_screenshot_1 else response_without_screenshot
 
-        # 第二个日志：如果分类器输出为2，保留使用screenshot的结果，否则保留不使用screenshot的结果
         use_screenshot_2 = prediction == 2
         pred_2 = pred_with_screenshot if use_screenshot_2 else pred_without_screenshot
         answer_in_pred_2 = answer_in_pred_with_screenshot if use_screenshot_2 else answer_in_pred_without_screenshot
@@ -228,7 +220,6 @@ def main(args):
         logs_1.append(log_entry_1)
         logs_2.append(log_entry_2)
 
-        # 使用epoch值来区分文件名
         epoch = args.classifier_path.split('_')[-1].split('.')[0]
         output_name_1 = f'{args.output_root}/{args.log_name}_1_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_1_epoch_{epoch}.json'
         output_name_2 = f'{args.output_root}/{args.log_name}_2_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_2_epoch_{epoch}.json'
