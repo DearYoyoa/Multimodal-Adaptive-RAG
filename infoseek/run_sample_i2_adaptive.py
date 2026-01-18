@@ -76,7 +76,6 @@ def query_with_image(
     query_image = load_image_wrapper(image_path, data_source='local')
     preprocessed_image = preprocess_image(query_image)
 
-    # 首先进行不使用screenshot的查询
     query_system_msg = query_system_msg_without_screenshot
     messages = [
         {
@@ -95,7 +94,6 @@ def query_with_image(
     generated_output = model.generate(**inputs, max_new_tokens=1000, output_hidden_states=True, return_dict_in_generate=True)
     hidden_state = generated_output.hidden_states[-1][-1][:, 0, :].detach()
 
-    # 使用Classifier1进行预测
     prediction = None
     use_screenshot = False
     if use_adaptive:
@@ -104,7 +102,7 @@ def query_with_image(
             prediction = torch.argmax(classifier_output, dim=1).item()
         use_screenshot = (prediction == 1)
     else:
-        use_screenshot = True  # 非自适应模式下总是使用截图
+        use_screenshot = True 
 
     if use_screenshot:
         query_system_msg = query_system_msg_with_screenshot
@@ -218,8 +216,7 @@ def main(args):
             }
         )
 
-        # 使用epoch值来区分文件名
-        epoch = args.classifier_path.split('_')[-1].split('.')[0]  # 提取epoch值
+        epoch = args.classifier_path.split('_')[-1].split('.')[0]
         output_name = f'{args.output_root}/{args.log_name}_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_epoch_{epoch}.json'
         with open(output_name, 'w') as f:
             json.dump(logs, f, indent=4)
