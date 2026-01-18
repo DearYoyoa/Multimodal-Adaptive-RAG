@@ -180,14 +180,12 @@ def main(args):
             answer_in_pred_without_screenshot = sample['answer'].lower() in pred_without_screenshot.lower()
             answer_in_pred_with_screenshot = sample['answer'].lower() in pred_with_screenshot.lower()
 
-        # 第一个日志：如果分类器输出为1，保留不使用screenshot的结果，否则保留使用screenshot的结果
         use_screenshot_1 = prediction != 1
         pred_1 = pred_with_screenshot if use_screenshot_1 else pred_without_screenshot
         answer_in_pred_1 = answer_in_pred_with_screenshot if use_screenshot_1 else answer_in_pred_without_screenshot
         messages_1 = messages_with_screenshot if use_screenshot_1 else messages_without_screenshot
         response_1 = response_with_screenshot if use_screenshot_1 else response_without_screenshot
 
-        # 第二个日志：如果分类器输出为2，保留使用screenshot的结果，否则保留不使用screenshot的结果
         use_screenshot_2 = prediction == 2
         pred_2 = pred_with_screenshot if use_screenshot_2 else pred_without_screenshot
         answer_in_pred_2 = answer_in_pred_with_screenshot if use_screenshot_2 else answer_in_pred_without_screenshot
@@ -229,7 +227,6 @@ def main(args):
         logs_1.append(log_entry_1)
         logs_2.append(log_entry_2)
 
-    # 保存日志
     output_name_1 = f'{args.output_root}/{args.log_name}_1_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_1.json'
     output_name_2 = f'{args.output_root}/{args.log_name}_2_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_2.json'
     
