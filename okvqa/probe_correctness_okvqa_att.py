@@ -7,16 +7,14 @@ from tqdm import tqdm
 from transformers import AutoProcessor, AutoModelForVision2Seq
 import torch
 from classifier_token_probe_okvqa import MLPClassifier
-from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score  # 新增的导入
+from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score 
 import torch
 import torch.nn as nn
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def load_classifier(model_path, input_dim, num_classes):
-    """
-    加载分类器模型。
-    """
+
 
     classifier = MLPClassifier(input_dim, num_classes).to(DEVICE)
     classifier.load_state_dict(torch.load(model_path))
@@ -24,36 +22,25 @@ def load_classifier(model_path, input_dim, num_classes):
     return classifier
 
 def extract_vision_features(model_output, inputs, model, layer_idx):
-    """
-    从模型输出中提取指定层的视觉特征。
-    """
-    # 获取指定层的hidden states
     layer_hidden_states = model_output.hidden_states[layer_idx]
-    
-    # 找到图像token的位置
     image_token_id = model.config.image_token_id
     input_ids = inputs['input_ids'][0]
-    
-    # 找到所有图像token的位置
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 2).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 获取每个图像的特征
+
     vision_hidden_states = []
     for i in range(len(image_boundaries) - 1):
         start_idx = image_token_positions[image_boundaries[i]]
         end_idx = image_token_positions[image_boundaries[i+1] - 1]
-        
-        # 获取这张图片所有patch的hidden states
+
         image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-        # 对所有patch取平均得到这张图片的表征
+
         image_feature = image_patches.max(dim=1)[0]
         vision_hidden_states.append(image_feature)
-    
-    # 堆叠所有图像的特征
+
     vision_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
     return vision_features
 
@@ -95,7 +82,6 @@ def query_with_image(
     original_vision_features = torch.tensor(original_vision_features).to(DEVICE)
     # Use classifier for prediction
     with torch.no_grad():
-        # 只使用第一个图像的表征
         if 'original' in classifier_path:
             x = original_vision_features[0].unsqueeze(0).to(DEVICE)
         else:
@@ -107,10 +93,10 @@ def query_with_image(
 
         classifier_output = classifier(hidden_state_without_screenshot, x)
         # prediction = torch.argmax(classifier_output, dim=0).item()
-        # prediction_score = torch.softmax(classifier_output, dim=0)[1].item()  # 获取正类的概率分数
+        # prediction_score = torch.softmax(classifier_output, dim=0)[1].item()
         prediction = torch.argmax(classifier_output, dim=1).item()
-        prediction_score = torch.softmax(classifier_output, dim=1)[:, 1].item()  # 获取正类的概率分数
-    return messages_without_screenshot, prediction, prediction_score  # 返回预测分数
+        prediction_score = torch.softmax(classifier_output, dim=1)[:, 1].item()
+    return messages_without_screenshot, prediction, prediction_score
 
     # return generated_texts_without_screenshot, generated_texts_with_screenshot, messages_without_screenshot, messages_with_screenshot, prediction
 
@@ -120,7 +106,6 @@ def main(args):
     #     "experiment/infoseek/models--HuggingFaceM4--idefics2-8b",
     # ).to(DEVICE)
 
-    # 从模型路径中提取layer_idx和是否使用rir
     layer_idx = int(args.classifier_path.split('layer_')[1].split('_')[0])
     input_dim = 8192
     classifier = load_classifier(args.classifier_path, input_dim, 2)
@@ -147,9 +132,9 @@ def main(args):
     total_samples = len(data)
     correct = 0
     logs = []
-    true_labels = []  # 用于存储真实标签
-    prediction_scores = []  # 用于存储预测分数
-    predictions = []  # 用于存储预测标签
+    true_labels = []
+    prediction_scores = []
+    predictions = []
     for idx, sample in tqdm(enumerate(samples[args.idx_offset:]), total=len(samples[args.idx_offset:])):
         idx = args.idx_offset + idx
         # image_path = f"data_okvqa/okvqa_image/{sample['image_id']}.jpg"
@@ -216,9 +201,7 @@ def main(args):
         with open(output_name, 'w') as f:
             json.dump(logs, f, indent=4)
 
-    # 计算AUC
     auc_score = roc_auc_score(true_labels, prediction_scores)
-    # 计算Precision, Recall, F1
     precision = precision_score(true_labels, predictions)
     recall = recall_score(true_labels, predictions)
     f1 = f1_score(true_labels, predictions)
