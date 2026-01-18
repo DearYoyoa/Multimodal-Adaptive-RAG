@@ -12,11 +12,6 @@ import time
 class TokenProbeDataset(Dataset):
     def __init__(self, json_file, image_hidden_state_dir, original_image_hidden_state_dir, 
                  layer_idx=-1):
-        """
-        Args:
-            layer_idx (int): 指定使用第几层的hidden state。默认为-1，表示最后一层。
-                           范围应该在0到32之间（总共33层，索引从0开始）
-        """
         with open(json_file, 'r') as f:
             self.data = json.load(f)
         self.image_hidden_state_dir = image_hidden_state_dir
@@ -30,12 +25,11 @@ class TokenProbeDataset(Dataset):
         item = self.data[idx]
         image_id = item['image_id']
         
-        # 加载image hidden states - (33, 2, 4096)
+        # image hidden states - (33, 2, 4096)
         image_hidden_state = np.load(os.path.join(self.image_hidden_state_dir, f"{image_id}.npy"))
-        # 加载original image hidden states - (2, 4096)
+        # original image hidden states - (2, 4096)
         original_image_hidden_state = np.load(os.path.join(self.original_image_hidden_state_dir, f"{image_id}.npy"))
-        
-        # 获取标签
+
         label = 0 if item['group'].endswith('_0') else 1
         group_label = int(item['group'].split('_')[0]) * 2 + (1 if item['group'].endswith('_1') else 0)
         
@@ -73,15 +67,14 @@ def train(model, dataloader, criterion, optimizer, device, epoch, model_type, nu
         ]
         
         optimizer.zero_grad()
-        
-        # 根据模型类型选择输入
+
         if 'original' in model_type:
             if 'wo_rir' in model_type:
-                # 只使用第一个图像的表征
+
                 x = original_image_hidden[:, 0]  # (batch_size, 4096)
         else:
             if 'wo_rir' in model_type:
-                # 只使用指定层第一个图像的表征
+
                 x = image_hidden[:, layer_idx, 0]  # (batch_size, 4096)
         outputs = model(x)
         target = label if num_classes == 2 else group_label
@@ -111,26 +104,20 @@ def save_model(model, model_name, epoch):
     logging.info(f"Saved model to {save_path}")
 
 def main():
-    # 设置日志
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    # 设置参数
     batch_size = 32
     num_epochs = 16
     learning_rate = 0.0001
     weight_decay = 0.01
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 为每一层创建数据集和训练模型
     layer_indices = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, -1]  # 示例：选择几个关键层进行实验
-    
-    # 训练两种分类任务
+
     for num_classes in [2]:
         logging.info(f"\nTraining {num_classes}-class classification models")
         
         for layer_idx in layer_indices:
             logging.info(f"\nTraining models for layer {layer_idx}")
-            # 创建数据集
             dataset = TokenProbeDataset(
                 # json_file='data_0921/infoseek/infoseek_i2_rir/logs_infoseek_i2_rir.json',
                 json_file='okvqa_train_data/okvqa/okvqa_train_i2/logs_okvqa_train_i2.json',
@@ -140,23 +127,20 @@ def main():
             )
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-            # 定义模型配置
             task_prefix = 'binary' if num_classes == 2 else 'multiclass'
             model_configs = [
-                # 不使用RIR的模型 (输入维度 4096 + 4096 = 8192)
+                #  (4096 + 4096 = 8192)
                 (f'qwen_dp3_{task_prefix}_layer_{layer_idx}_original_image_wo_rir', 4096, num_classes),
                 (f'qwen_dp3_{task_prefix}_layer_{layer_idx}_image_wo_rir', 4096, num_classes),
-                # 使用所有表征的模型 (输入维度 8192 + 8192 = 16384)
+                #  (8192 + 8192 = 16384)
                 # (f'qwen_dp3_{task_prefix}_layer_{layer_idx}_original_image_rir', 8192, num_classes),
                 # (f'qwen_dp3_{task_prefix}_layer_{layer_idx}_image_rir', 8192, num_classes)
             ]
 
-            # 训练每个模型
             for model_name, input_dim, num_classes in model_configs:
                 logging.info(f"\nTraining {model_name}...")
                 model = MLPClassifier(input_dim, num_classes).to(device)
-                
-                # 设置损失函数和优化器
+
                 if num_classes == 2:
                     criterion = nn.CrossEntropyLoss()
                 else:
