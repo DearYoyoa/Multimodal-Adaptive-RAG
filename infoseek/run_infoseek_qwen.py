@@ -40,59 +40,39 @@ def load_image_wrapper(image_path, data_source='url'):
 
 
 def extract_vision_features(generated_output, inputs, model):
-    """
-    从生成输出中提取所有层的视觉特征。
-    
-    Args:
-        generated_output: 模型的生成输出
-        inputs: 模型的输入
-        model: IDEFICS2 模型
-    
-    Returns:
-        numpy.ndarray: 所有层的图像特征向量
-    """
-    # 获取所有层的hidden states
+
     all_hidden_states = generated_output.hidden_states  # 33层 [0-32]
-    
-    # 找到图像token的位置
+
     image_token_id = model.config.image_token_id
     input_ids = inputs['input_ids'][0]  # 假设 batch_size = 1
-    
-    # 找到所有图像token的位置
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
     
     if len(image_token_positions) == 0:
         raise ValueError("No image tokens found in the input sequence")
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 2).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 对每一层都提取特征
+
     all_layers_features = []
     for layer_idx, layer_hidden_states in enumerate(all_hidden_states):
-        # 获取每个图像的特征
+
         vision_hidden_states = []
         for i in range(len(image_boundaries) - 1):
             start_idx = image_token_positions[image_boundaries[i]]
             end_idx = image_token_positions[image_boundaries[i+1] - 1]
-            
-            # 获取这张图片所有patch的hidden states
+
             image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-            # 对所有patch取平均得到这张图片的表征
+
             image_feature = image_patches.mean(dim=1)  # [batch_size, hidden_dim]
             # image_feature = image_patches
             vision_hidden_states.append(image_feature)
-        
-        # 堆叠当前层的所有图像特征
+
         layer_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
         all_layers_features.append(layer_features)
-    
-    # 堆叠所有层的特征
+
     all_layers_features = torch.stack(all_layers_features)  # [num_layers, num_images, batch_size, hidden_dim]
-    
-    # 可以添加调试信息
-    if False:  # 设置为 True 来启用调试
+    if False:  
         print(f"Found {len(vision_hidden_states)} images")
         print(f"Features shape: {all_layers_features.shape}")
         for i in range(len(image_boundaries) - 1):
@@ -181,21 +161,21 @@ def query_with_image(
     with torch.no_grad():
         model_output = model(
             **inputs,
-            output_hidden_states=True,  # 确保返回隐藏状态
-            return_dict=True,           # 确保返回字典格式的输出
+            output_hidden_states=True, 
+            return_dict=True,
         )
 
     generated_output = model.generate(**inputs, max_new_tokens=128, output_hidden_states=True, return_dict_in_generate=True)
     generated_ids = generated_output.sequences
 
     hidden_states = generated_output.hidden_states
-    last_hidden_state = hidden_states[-1][-1]  # 获取最后一个时间步的隐藏状态
+    last_hidden_state = hidden_states[-1][-1] 
     last_hidden_state = last_hidden_state.detach().cpu().numpy()
     if not os.path.exists(f'hidden_state_qwen_test/hidden_infoseek_text/hidden_state_rir/'):
         os.makedirs(f'hidden_state_qwen_test/hidden_infoseek_text/hidden_state_rir/')
     np.save(f'hidden_state_qwen_test/hidden_infoseek_text/hidden_state_rir/hidden_states_rir_{image_path.split("/")[-1].split(".")[0]}.npy', last_hidden_state)
 
-    height, width = query_image.size  # 获取图像的高度和宽度
+    height, width = query_image.size 
     grid_thw = torch.tensor([[1, height, width]]).to(DEVICE)
     if extract_vision_feature:
         # print("inputs.keys():", inputs.keys())
@@ -217,15 +197,15 @@ def query_with_image(
         np.save(f'hidden_state_qwen_test/hidden_infoseek_image_mean/hidden_state/{image_path.split("/")[-1].split(".")[0]}.npy', vision_features)
         if not os.path.exists(f'hidden_state_qwen_test/hidden_infoseek_image_mean/original_hidden_state/'):
             os.makedirs(f'hidden_state_qwen_test/hidden_infoseek_image_mean/original_hidden_state/')
-        np.save(f'hidden_state_qwen_test/hidden_infoseek_image_mean/original_hidden_state/{image_path.split("/")[-1].split(".")[0]}.npy', original_vision_features.cpu().numpy())    # 处理生成的文本
+        np.save(f'hidden_state_qwen_test/hidden_infoseek_image_mean/original_hidden_state/{image_path.split("/")[-1].split(".")[0]}.npy', original_vision_features.cpu().numpy())
 
     generated_texts = processor.batch_decode(generated_ids, skip_special_tokens=True)
     return generated_texts, messages_record
 
 
 def main(args):
-    # model = Qwen2VLForConditionalGeneration.from_pretrained("/ossfs/workspace/Qwen__Qwen2-VL-7B-Instruct").to(DEVICE)
-    # processor = AutoProcessor.from_pretrained("/ossfs/workspace/Qwen__Qwen2-VL-7B-Instruct")
+    # model = Qwen2VLForConditionalGeneration.from_pretrained("/workspace/Qwen__Qwen2-VL-7B-Instruct").to(DEVICE)
+    # processor = AutoProcessor.from_pretrained("/workspace/Qwen__Qwen2-VL-7B-Instruct")
 
     processor = AutoProcessor.from_pretrained("/ossfs/workspace/Qwen__Qwen2-VL-7B-Instruct")
     # model = AutoModelForVision2Seq.from_pretrained(
@@ -239,8 +219,7 @@ def main(args):
     # load sample data
     with open('local_data/infoseek_data.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     # samples = [sample for sample in data]
     samples = [_ for cat_data in data.values() for _ in cat_data]
 
