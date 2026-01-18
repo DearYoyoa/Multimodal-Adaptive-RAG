@@ -43,35 +43,19 @@ def load_image_wrapper(image_path, data_source='url'):
         raise ValueError(f"Invalid data_source: {data_source}")
     
 def extract_exact_answer_features(model_output, question, inputs, model, tokenizer, pred, model_name, ground_truth, generated_output):
-    """
-    从生成输出中提取exact answer相关token的隐藏状态
-    
-    Args:
-        generated_output: 模型的生成输出
-        inputs: 模型的输入
-        model: IDEFICS2 模型
-        tokenizer: 分词器
-        pred: 生成的预测文本
-        model_name: 模型名称
-    
-    Returns:
-        dict: 包含不同exact answer token位置的隐藏状态
-    """
 
-    # 获取所有层的hidden states (5,33,4096)
     # all_hidden_states = generated_output.hidden_states[-1]
     # model_hidden_state = model_output.hidden_states  # [batch_size, seq_len, hidden_dim]
     # print("model_hidden_state[0]:", model_hidden_state[0].shape)
     # print("model_hidden_state[-1]:", model_hidden_state[-1].shape)
-    
-    # 获取exact answer相关token的位置
+
     exact_tokens = {
         'exact_answer_last_token': [],
         'exact_answer_first_token': [], 
         'exact_answer_before_first_token': [],
         'exact_answer_after_last_token': []
     }
-    # 获取生成的序列
+
     generated_ids = generated_output.sequences[0]
     # full_tokens = generated_ids
     # full_answer_tokenized = tokenizer(pred, return_tensors="pt")['input_ids'][0]
@@ -85,7 +69,7 @@ def extract_exact_answer_features(model_output, question, inputs, model, tokeniz
     valid = 0
     exact_answer = None
     for answer in ground_truth:
-        if isinstance(answer, dict):  # 处理 answer_eval 的情况
+        if isinstance(answer, dict):
             answer = str(answer["wikidata"])
         if answer in pred:
             valid = 1
@@ -195,8 +179,8 @@ def query_with_image(
         with torch.no_grad():
             model_output = model(
                 **inputs,
-                output_hidden_states=True,  # 确保返回隐藏状态
-                return_dict=True,           # 确保返回字典格式的输出
+                output_hidden_states=True, 
+                return_dict=True, 
             )
             generated_output_with_screenshot = model.generate(
                 **inputs, 
@@ -229,11 +213,9 @@ def query_with_image(
         generated_texts = processor.batch_decode(generated_ids, skip_special_tokens=True)
         # print("generated_texts: ", generated_texts)
         pred = generated_texts[0].split('Assistant: ')[-1]
-        
-        # 提取并保存exact answer相关token的特征
+
         exact_features = extract_exact_answer_features(model_output,query_text, inputs, model, processor, pred, model.name_or_path, ground_truth, generated_output)
-        
-        # 保存特征
+
         for token_type, features in exact_features.items():
             save_dir = f'hidden_state_i2_test/hidden_infoseek/exact_answer_features_mlp/{token_type}'
             if not os.path.exists(save_dir):
@@ -256,8 +238,7 @@ def main(args):
     # load sample data
     with open('local_data/infoseek_data.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     samples = [_ for cat_data in data.values() for _ in cat_data]
     # samples = data
     # with open(f'{args.output_root}/samples.json', 'w') as f:
