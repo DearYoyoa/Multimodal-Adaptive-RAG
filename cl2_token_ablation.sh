@@ -3,7 +3,6 @@ BASE_PATH="models/token_probe_okvqa_i2_ablation"
 DATA_DIR="adaptive"
 OUTPUT_DIR="data_okvqa/token_probe_okvqa_i2_ablation"
 
-# 运行自适应检索实验
 echo "Running Adaptive Retrieval Experiment..."
 
 # Define the layers, epochs, and model types
