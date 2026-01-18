@@ -132,8 +132,7 @@ def main(args):
     # load sample data
     with open('data_0921/infoseek_input.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     samples = [sample for sample in data]
 
     with open(f'{args.output_root}/samples.json', 'w') as f:
