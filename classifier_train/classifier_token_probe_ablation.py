@@ -74,13 +74,10 @@ def train(model, dataloader, criterion, optimizer, device, epoch, model_type, nu
         ]
         
         optimizer.zero_grad()
-        
-        # 判断是否使用 RIR
+
         if 'wo_rir' in model_type:
-            # 只使用文本 hidden_state
             text_hidden = hidden_state.squeeze(1).squeeze(1)  # (batch_size, 4096)
         else:
-            # 使用 text_hidden 和 text_hidden_rir 拼接
             text_hidden = torch.cat([
                 hidden_state.squeeze(1).squeeze(1),  # (batch_size, 4096)
                 hidden_state_rir.squeeze(1).squeeze(1)  # (batch_size, 4096)
@@ -89,7 +86,6 @@ def train(model, dataloader, criterion, optimizer, device, epoch, model_type, nu
         outputs = model(text_hidden)
         # outputs = outputs.view(-1, num_classes)  # (batch_size, num_classes)
         target = label if num_classes == 2 else group_label
-        # 确保 target 是一维张量
         # print(f"outputs.shape: {outputs.shape}, target.shape: {target.shape}")
         
         
