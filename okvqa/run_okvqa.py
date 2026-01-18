@@ -126,7 +126,7 @@ def query_with_image(
     # generated_output = model.generate(**inputs, max_new_tokens=500, output_hidden_states=True, return_dict_in_generate=True)
     # generated_ids = generated_output.sequences
     # hidden_states = generated_output.hidden_states
-    # last_hidden_state = hidden_states[-1][-1]  # 获取最后一个时间步的隐藏状态
+    # last_hidden_state = hidden_states[-1][-1]
     # last_hidden_state = last_hidden_state.detach().cpu().numpy()
     # np.save(f'data_okvqa/okvqa/last_hidden_state/hidden_states_{image_path.split("/")[-1].split(".")[0]}.npy', last_hidden_state)
     # generated_texts = processor.batch_decode(generated_ids, skip_special_tokens=True)
@@ -146,8 +146,7 @@ def main(args):
     # load sample data
     with open('okvqa_train_data/okvqa_input.json', 'r') as f:
         data = json.load(f)
-    
-    # 直接遍历data列表，不需要使用.values()
+
     samples = [sample for sample in data]
 
     with open(f'{args.output_root}/samples.json', 'w') as f:
