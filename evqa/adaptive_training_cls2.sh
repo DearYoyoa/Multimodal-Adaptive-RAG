@@ -1,12 +1,10 @@
 #!/bin/bash
 
-# 设置环境变量和路径
 export PYTHONPATH="$PYTHONPATH:path/to/your/project"
 CLASSIFIER_PATH="models/classifier2/classifier2_epoch_15.pth"
 DATA_DIR="adaptive"
 OUTPUT_DIR="local_data/evqa"
 
-# 运行自适应检索实验
 echo "Running Adaptive Retrieval Experiment for EVQA..."
 EXP_NAME=evqa_i2_adaptive_cls2
 CUDA_VISIBLE_DEVICES=3 python -m experiment.evqa.run_evqa_adaptive_cls2 \
