@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# 使用的 system prompt
+# useful system prompt
 
 
 SYS_MSG="experiment/okvqa/query_system_no_screenshot.jinja2"
