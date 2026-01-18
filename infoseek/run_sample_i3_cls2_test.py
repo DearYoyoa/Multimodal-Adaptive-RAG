@@ -17,36 +17,25 @@ def load_classifier(model_path, input_dim, num_classes):
     return classifier
 
 def extract_vision_features(model_output, inputs, model, layer_idx):
-    """
-    从模型输出中提取指定层的视觉特征。
-    """
-    # 获取指定层的hidden states
     layer_hidden_states = model_output.hidden_states[layer_idx]
-    
-    # 找到图像token的位置
+
     image_token_id = model.config.image_token_id
     input_ids = inputs['input_ids'][0]
-    
-    # 找到所有图像token的位置
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 20).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 获取每个图像的特征
+
     vision_hidden_states = []
     for i in range(len(image_boundaries) - 1):
         start_idx = image_token_positions[image_boundaries[i]]
         end_idx = image_token_positions[image_boundaries[i+1] - 1]
-        
-        # 获取这张图片所有patch的hidden states
+
         image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-        # 对所有patch取平均得到这张图片的表征
         image_feature = image_patches.mean(dim=1)
         vision_hidden_states.append(image_feature)
-    
-    # 堆叠所有图像的特征
+
     vision_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
     return vision_features
 
@@ -89,7 +78,6 @@ def query_with_image(
     # inputs_without_screenshot = processor(text=prompt_without_screenshot, images=[Image.open(image_path)], return_tensors="pt")
     # inputs_without_screenshot = {k: v.to(DEVICE) for k, v in inputs_without_screenshot.items()}
 
-    # 同时使用forward和generate获取特征和响应
     # with torch.no_grad():
     #     # 使用forward获取hidden states
     #     # model_output_without_screenshot = model(
@@ -97,15 +85,13 @@ def query_with_image(
     #     #     output_hidden_states=True,
     #     #     return_dict=True,
     #     # )
-    #     # # 使用generate获取response
     #     generated_output_without_screenshot = model.generate(
     #         **inputs_without_screenshot, 
     #         max_new_tokens=1000, 
     #         output_hidden_states=True,
     #         return_dict_in_generate=True
     #     )
-    
-    # 提取特征
+
     # hidden_state_without_screenshot = generated_output_without_screenshot.hidden_states[-1][-1][:, 0, :].detach()
         
         
@@ -131,15 +117,12 @@ def query_with_image(
     # inputs_with_screenshot = processor(text=prompt_with_screenshot, images=[Image.open(image_path), Image.open(screenshot_path)], return_tensors="pt")
     # inputs_with_screenshot = {k: v.to(DEVICE) for k, v in inputs_with_screenshot.items()}
 
-    # 同时使用forward和generate获取特征和响应
     # with torch.no_grad():
-    #     # 使用forward获取hidden states
     #     model_output_with_screenshot = model(
     #         **inputs_with_screenshot,
     #         output_hidden_states=True,
     #         return_dict=True,
     #     )
-        # # 使用generate获取response
         # generated_output_with_screenshot = model.generate(
         #     **inputs_with_screenshot, 
         #     max_new_tokens=1000, 
@@ -162,7 +145,7 @@ def query_with_image(
     # Use classifier for prediction
     with torch.no_grad():
         if use_rir:
-            # 使用所有表征
+
             if 'original' in classifier_path:
                 x = original_vision_features.reshape(1, -1).to(DEVICE)
             else:
@@ -175,7 +158,6 @@ def query_with_image(
             # print("x: ", x.shape)
             x = torch.cat((x, text_hidden), dim=1)
         else:
-            # 只使用第一个图像的表征
             if 'original' in classifier_path:
                 x = original_vision_features[0].unsqueeze(0).to(DEVICE)
             else:
@@ -203,7 +185,6 @@ def main(args):
     #     "experiment/infoseek/models--HuggingFaceM4--idefics2-8b",
     # ).to(DEVICE)
 
-    # 从模型路径中提取layer_idx和是否使用rir
     layer_idx = int(args.classifier_path.split('layer_')[1].split('_')[0])
     use_rir = 'rir' in args.classifier_path and 'wo_rir' not in args.classifier_path
     input_dim = 16384 if use_rir else 8192
@@ -286,17 +267,13 @@ def main(args):
             answer_in_pred_without_screenshot = sample['answer'].lower() in pred_without_screenshot.lower()
             answer_in_pred_with_screenshot = sample['answer'].lower() in pred_with_screenshot.lower()
 
-
-        # 第一个日志：如果分类器输出为1，保留不使用screenshot的结果，否则保留使用screenshot的结果
         use_screenshot_1 = prediction != 1
         pred_1 = pred_with_screenshot if use_screenshot_1 else pred_without_screenshot
         answer_in_pred_1 = answer_in_pred_with_screenshot if use_screenshot_1 else answer_in_pred_without_screenshot
         messages_1 = messages_with_screenshot if use_screenshot_1 else messages_without_screenshot
         response_1 = response_with_screenshot if use_screenshot_1 else response_without_screenshot
         judge_correct_1 = judge_correct_with_screenshot if use_screenshot_1 else judge_correct_without_screenshot
-        
 
-        # 第二个日志：如果分类器输出为2，保留使用screenshot的结果，否则保留不使用screenshot的结果
         use_screenshot_2 = prediction == 2
         pred_2 = pred_with_screenshot if use_screenshot_2 else pred_without_screenshot
         answer_in_pred_2 = answer_in_pred_with_screenshot if use_screenshot_2 else answer_in_pred_without_screenshot
@@ -342,7 +319,6 @@ def main(args):
         logs_1.append(log_entry_1)
         logs_2.append(log_entry_2)
 
-        # 使用epoch值来区分文件名
         epoch = args.classifier_path.split('_')[-1].split('.')[0]
         output_name_1 = f'{args.output_root}/{args.log_name}_1_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_1_epoch_{epoch}.json'
         output_name_2 = f'{args.output_root}/{args.log_name}_2_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_2_epoch_{epoch}.json'
