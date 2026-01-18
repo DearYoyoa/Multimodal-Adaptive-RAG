@@ -18,36 +18,26 @@ def load_classifier(model_path, input_dim, num_classes):
     return classifier
 
 def extract_vision_features(model_output, inputs, model, layer_idx):
-    """
-    从模型输出中提取指定层的视觉特征。
-    """
-    # 获取指定层的hidden states
+
     layer_hidden_states = model_output.hidden_states[layer_idx]
-    
-    # 找到图像token的位置
+
     image_token_id = model.config.image_token_id
     input_ids = inputs['input_ids'][0]
-    
-    # 找到所有图像token的位置
+
     image_token_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
-    
-    # 找到gap大于2的位置，这些位置表示不同图片的边界
+
     gaps = image_token_positions[1:] - image_token_positions[:-1]
     image_boundaries = [0] + ((gaps > 2).nonzero(as_tuple=True)[0] + 1).tolist() + [len(image_token_positions)]
-    
-    # 获取每个图像的特征
+
     vision_hidden_states = []
     for i in range(len(image_boundaries) - 1):
         start_idx = image_token_positions[image_boundaries[i]]
         end_idx = image_token_positions[image_boundaries[i+1] - 1]
-        
-        # 获取这张图片所有patch的hidden states
+
         image_patches = layer_hidden_states[:, start_idx:end_idx+1, :]
-        # 对所有patch取平均得到这张图片的表征
         image_feature = image_patches.mean(dim=1)
         vision_hidden_states.append(image_feature)
-    
-    # 堆叠所有图像的特征
+
     vision_features = torch.stack(vision_hidden_states)  # [num_images, batch_size, hidden_dim]
     return vision_features
 
@@ -70,7 +60,6 @@ def query_with_image(
     with open(exp_dir + sys_msg_filename_without_screenshot, 'r') as f:
         query_system_msg_without_screenshot = f.read()
 
-    # 首先进行不使用screenshot的查询
     query_system_msg = query_system_msg_without_screenshot
     messages = [
         {
@@ -86,17 +75,14 @@ def query_with_image(
     inputs = processor(text=prompt, images=[Image.open(image_path)], return_tensors="pt")
     inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
 
-    # 同时使用forward和generate
     with torch.no_grad():
-        # 使用forward获取hidden states
+
         model_output = model(
             **inputs,
             output_hidden_states=True,
             return_dict=True,
         )
-        # 使用generate获取response和last_hidden_state
-    
-    # 提取视觉特征
+
     image_hidden_state = extract_vision_features(model_output, inputs, model, layer_idx)
     original_vision_features = model_output.image_hidden_states.reshape(2, -1, 4096).mean(dim=1)
 
@@ -110,12 +96,11 @@ def query_with_image(
     )
     hidden_state = generated_output.hidden_states[-1][-1][:, 0, :].detach()
 
-    # 使用Classifier进行预测
     prediction = None
     use_screenshot = False
     if use_adaptive:
         with torch.no_grad():
-            # 只使用第一个图像的表征
+
             if 'original' in classifier_path:
                 x = original_vision_features[0].unsqueeze(0).to(DEVICE)
             else:
@@ -183,9 +168,8 @@ def main(args):
         "experiment/infoseek/models--HuggingFaceM4--idefics2-8b",
     ).to(DEVICE)
 
-    # 从模型路径中提取layer_idx
     layer_idx = int(args.classifier_path.split('layer_')[1].split('_')[0])
-    input_dim = 8192  # 4096(图像) + 4096(文本)
+    input_dim = 8192  
     classifier = load_classifier(args.classifier_path, input_dim, 2) if args.use_adaptive else None
 
     # initial setup
@@ -243,7 +227,6 @@ def main(args):
             'use_adaptive': args.use_adaptive
         })
 
-        # 使用epoch值来区分文件名
         epoch = args.classifier_path.split('_')[-1].split('.')[0]
         output_name = f'{args.output_root}/{args.log_name}_epoch_{epoch}_{args.idx_offset}.json' if args.idx_offset != 0 else f'{args.output_root}/{args.log_name}_epoch_{epoch}.json'
         with open(output_name, 'w') as f:
