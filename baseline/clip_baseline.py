@@ -114,8 +114,8 @@ def clip_inference(
     # with torch.no_grad():
     #     model_output = model(
     #         **inputs,
-    #         output_hidden_states=True,  # 确保返回隐藏状态
-    #         return_dict=True,  # 确保返回字典格式的输出
+    #         output_hidden_states=True, 
+    #         return_dict=True, 
     #     )
     generated_output = model.generate(**inputs, max_new_tokens=1000, output_hidden_states=True,
                                       return_dict_in_generate=True, use_cache=False)
@@ -215,3 +215,4 @@ if __name__ == '__main__':
 
     args = argparser.parse_args()
     main(args)
+
